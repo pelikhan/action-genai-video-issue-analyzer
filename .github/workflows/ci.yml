@@ -19,13 +19,30 @@ jobs:
   test-action:
     needs: test
     runs-on: ubuntu-latest
+    services:
+      whisper:
+        image: onerahmet/openai-whisper-asr-webservice:latest
+        env:
+          ASR_MODEL: base
+          ASR_ENGINE: openai_whisper
+        ports:
+          - 9000:9000
     steps:
       - uses: actions/checkout@v4
-      - run: docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice:latest
-      - run: |
-          for i in {1..10}; do
-            curl -I http://localhost:9000/docs && break || sleep 5;
+      - name: Wait for Whisper service
+        run: |
+          timeout=60
+          elapsed=0
+          while ! curl -s -I http://localhost:9000/docs > /dev/null; do
+            sleep 5
+            elapsed=$((elapsed + 5))
+            if [ $elapsed -ge $timeout ]; then
+              echo "Timeout waiting for Whisper service"
+              exit 1
+            fi
+            echo "Waiting for Whisper service..."
           done
+          echo "Whisper service is ready!"
       - uses: ./
         with:
           github_issue: ${{ github.event.issue.number }}
