@@ -4,7 +4,7 @@ on:
     types: [opened, edited]
 permissions:
   contents: read
-  models: write
+  models: read
 jobs:
   test:
     runs-on: ubuntu-latest
