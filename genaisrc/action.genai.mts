@@ -50,19 +50,13 @@ async function processAssetLink(assetLink: string) {
 }
 
 async function processVideo(filename: string) {
-    let sceneThreshold = 0.5
-    let frames: string[] = []
-    do {
-        frames = await ffmpeg.extractFrames(filename, {
-            sceneThreshold,
-            cache: true,
-        })
-        sceneThreshold -= 0.05
-    } while (frames.length > 20 && sceneThreshold > 1)
     const transcript = await transcribe(filename, { model: "whisperasr:default", cache: true })
+    const frames = await ffmpeg.extractFrames(filename, {
+        transcript
+    })
     const { text, error } = await runPrompt(ctx => {
         def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true }) // ignore silent videos
-        defImages(frames, { detail: "low" }) // low detail for better performance
+        defImages(frames, { detail: "low", sliceSample: 40 }) // low detail for better performance
         $`${prompt}        
 ## Output format        
 - Use GitHub Flavored Markdown (GFM) for formatting.
