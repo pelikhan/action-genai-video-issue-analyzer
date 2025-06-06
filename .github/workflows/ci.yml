@@ -22,7 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice:latest
-      - run: curl -I http://localhost:9000/docs
+      - run: |
+          for i in {1..10}; do
+            curl -I http://localhost:9000/docs && break || sleep 5;
+          done
       - uses: ./
         with:
           github_issue: ${{ github.event.issue.number }}
