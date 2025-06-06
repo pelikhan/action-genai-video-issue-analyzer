@@ -3,7 +3,7 @@ FROM node:lts-alpine
 
 
 # Install packages
-RUN apk add --no-cache git ffmpeg
+RUN apk add --no-cache git ffmpeg docker
 
 # Download whisper ASR docker image
 RUN docker pull onerahmet/openai-whisper-asr-webservice:latest
