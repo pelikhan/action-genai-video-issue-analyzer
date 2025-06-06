@@ -1,16 +1,13 @@
-# action action
+# GitHub Action Video Issue Analyzer
 
-
+This GitHub Action runs all video assets in an issue body through a LLM model to analyze the content.
+The default behavior is to summarize and extract task items but this can be customized through the `prompt` input.
 
 ## Inputs
 
-- `github_token`: GitHub token with `models: read` permission at least. (required)
+- `prompt`: Custom prompt to use for the LLM model. If not provided, a default prompt will be used.
+- `github_token`: GitHub token with `models: read` permission at least. **(required)**
 - `debug`: Enable debug logging.
-
-## Outputs
-
-- `text`: The generated text output.
-- `data`: The generated JSON data output, parsed and stringified.
 
 ## Usage
 
@@ -30,7 +27,7 @@ on:
     push:
 permissions:
     contents: read
-    # issues: write
+    issues: write
     # pull-requests: write
     models: read
 concurrency:

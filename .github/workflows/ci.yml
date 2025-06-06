@@ -4,6 +4,7 @@ on:
     types: [opened, edited]
 permissions:
   contents: read
+  issues: write
   models: read
 jobs:
   test:
