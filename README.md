@@ -16,19 +16,20 @@ Add the following to your step in your workflow file:
 ```yaml
 uses: pelikhan/action-genai-video-issue-analyzer@main
 with:
+  github_issue: ${{ github.event.issue.number }}
   github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Example
 
 ```yaml
-name: My action
+name: genai video issue analyzer
 on:
-    push:
+  issues:
+    types: [opened, edited]
 permissions:
     contents: read
     issues: write
-    # pull-requests: write
     models: read
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,6 +41,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pelikhan/action-genai-video-issue-analyzer@main
         with:
+          github_issue: ${{ github.event.issue.number }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
