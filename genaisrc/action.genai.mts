@@ -61,8 +61,9 @@ async function processVideo(filename: string) {
         ctx.defImages(frames, { detail: "low", sliceSample: 40 }) // low detail for better performance
         ctx.$`${prompt}
 ## Output format        
-- Use GitHub Flavored Markdown (GFM) for formatting.
-- If you need to list tasks, use the format \`- [ ] task description\`.        
+- Use GitHub Flavored Markdown (GFM) for markdown syntax formatting.
+- If you need to list tasks, use the format \`- [ ] task description\`.
+- When possible, include a pointer to the \`[minute:second]\` location in the video using YouTube format.
 - The video is included as a set of <FRAMES> images and the <TRANSCRIPT>.`.role("system")
     }, {
         systemSafety: true,
