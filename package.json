@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "genaiscript": "1.142.3"
+  },
+  "scripts": {
+    "upgrade": "npx -y npm-check-updates -u && npm install",
+    "docker:build": "docker build -t pelikhan-action-genai-video-issue-analyzer .",
+    "docker:start": "docker run -e GITHUB_TOKEN pelikhan-action-genai-video-issue-analyzer",
+    "whisperasr:start": "docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice:latest",
+    "act:install": "gh extension install https://github.com/nektos/gh-act",
+    "act": "gh act",
+    "lint": "npx --yes prettier --write genaisrc/",
+    "fix": "genaiscript scripts fix",
+    "typecheck": "genaiscript scripts compile",
+    "configure": "genaiscript configure action",
+    "test": "echo 'No tests defined.'",
+    "action": "genaiscript run action --github-workspace",
+    "start": "npm whisperasr:start && npm action",
+    "dev": "clear && GITHUB_ISSUE=1 DEBUG=script genaiscript run action"
+  }
+}

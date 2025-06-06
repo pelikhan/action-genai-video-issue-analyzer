@@ -1,0 +1,15 @@
+name: action-genai-video-issue-analyzer
+description: Action
+inputs:
+  github_issue:
+    description: "GitHub issue number to analyze."
+    required: true
+  github_token:
+    description: "GitHub token with `models: read` permission at least."
+    required: true
+  debug:
+    description: Enable debug logging.
+    required: false
+runs:
+  using: docker
+  image: Dockerfile
