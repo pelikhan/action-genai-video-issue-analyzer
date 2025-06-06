@@ -1,15 +1,17 @@
 # For additional guidance on containerized actions, see https://docs.github.com/en/actions/sharing-automations/creating-actions/creating-a-docker-container-action
-FROM node:lts-alpine
+FROM node:lts
 
 
 # Install packages
-RUN apk add --no-cache git ffmpeg docker
+RUN apt-get update && apt-get install -y --no-install-recommends git ffmpeg docker.io
 
 # Download whisper ASR docker image
 RUN docker pull onerahmet/openai-whisper-asr-webservice:latest
 
 # check
+RUN node --version
 RUN ffmpeg -version
+RUN docker --version
 
 # Set working directory
 WORKDIR /genaiscript/action

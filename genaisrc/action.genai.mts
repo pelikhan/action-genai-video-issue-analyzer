@@ -21,9 +21,8 @@ if (assetLinks.length === 0) cancel("No video assets found in the issue body, no
 
 dbg(`issue: %s`, issue.title)
 
-for (const assetLink of assetLinks) {
+for (const assetLink of assetLinks)
     await processAssetLink(assetLink)
-}
 
 async function processAssetLink(assetLink: string) {
     output.heading(3, assetLink)
@@ -51,13 +50,16 @@ async function processAssetLink(assetLink: string) {
 
 async function processVideo(filename: string) {
     const transcript = await transcribe(filename, { model: "whisperasr:default", cache: true })
+    if (!transcript) {
+        output.error(`no transcript found for video ${filename}.`)
+    }
     const frames = await ffmpeg.extractFrames(filename, {
         transcript
     })
     const { text, error } = await runPrompt(ctx => {
-        def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true }) // ignore silent videos
-        defImages(frames, { detail: "low", sliceSample: 40 }) // low detail for better performance
-        $`${prompt}        
+        ctx.def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true }) // ignore silent videos
+        ctx.defImages(frames, { detail: "low", sliceSample: 40 }) // low detail for better performance
+        ctx.$`${prompt}
 ## Output format        
 - Use GitHub Flavored Markdown (GFM) for formatting.
 - If you need to list tasks, use the format \`- [ ] task description\`.        
