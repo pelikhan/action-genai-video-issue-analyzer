@@ -61,9 +61,10 @@ async function processAssetLink(assetLink: string) {
 }
 
 async function processVideo(filename: string) {
-    const transcript = await transcribe(filename, { model: "whisperasr:default" })
+    const transcript = await transcribe(filename, { model: "whisperasr:default", cache: true })
     const frames = await ffmpeg.extractFrames(filename, {
         transcript,
+        cache: true,
     })
     const res = await runPrompt(ctx => {
         def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true }) // ignore silent videos
