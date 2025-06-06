@@ -14,7 +14,7 @@
     "typecheck": "genaiscript scripts compile",
     "configure": "genaiscript configure action",
     "test": "echo 'No tests defined.'",
-    "action": "genaiscript run genaisrc/action.genai.mts --github-workspace --pull-request-comment",
+    "action": "genaiscript run action-video-issue-analyzer --github-workspace --pull-request-comment",
     "start": "npm run whisperasr:start && npm run action",
     "dev": "clear && GITHUB_ISSUE=1 DEBUG=script genaiscript run action --pull-request-comment"
   }
