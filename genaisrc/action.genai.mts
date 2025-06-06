@@ -19,31 +19,20 @@ const RX =
 const assetLinks = Array.from(new Set(Array.from(issue.body.matchAll(RX), m => m[0])))
 if (assetLinks.length === 0) cancel("No video assets found in the issue body, nothing to do.")
 
-output.heading(3, `issue`)
-output.itemValue(`title`, issue.title)
-output.fence(issue.body, "markdown")
+dbg(`issue: %s`, issue.title)
 
-// collect asset links
-// https://github.com/user-attachments/assets/299a67a1-7259-422e-9ecb-7beb306da3bb
-output.heading(3, `asset links`)
-for (const assetLink of assetLinks) {
-    output.itemLink(assetLink)
-}
-
-output.heading(3, `processing assets`)
 for (const assetLink of assetLinks) {
     await processAssetLink(assetLink)
 }
 
 async function processAssetLink(assetLink: string) {
-    output.heading(4, assetLink)
+    output.heading(3, assetLink)
+    dbg(assetLink)
     const downloadUrl = await github.resolveAssetUrl(assetLink)
     const res = await fetch(downloadUrl, { method: "GET" })
     const contentType = res.headers.get("content-type") || ""
     dbg(`download url: %s`, downloadUrl)
-    output.itemValue(`status`, res.statusText)
     dbg(`headers: %O`, res.headers)
-    output.itemValue(`content-type`, contentType)
     if (!res.ok)
         throw new Error(`Failed to download asset from ${downloadUrl}: ${res.status} ${res.statusText}`)
     if (!/^video\//.test(contentType)) {
@@ -53,20 +42,25 @@ async function processAssetLink(assetLink: string) {
 
     // save and cache
     const buffer = await res.arrayBuffer()
-    output.itemValue(`size`, `${(buffer.byteLength / 1e6) | 0}Mb`)
+    dbg(`size`, `${(buffer.byteLength / 1e6) | 0}Mb`)
     const filename = await workspace.writeCached(buffer, { scope: "run" })
-    output.itemValue(`filename`, filename)
+    dbg(`filename`, filename)
 
     await processVideo(filename)
 }
 
 async function processVideo(filename: string) {
+    let sceneThreshold = 0.5
+    let frames: string[] = []
+    do {
+        frames = await ffmpeg.extractFrames(filename, {
+            sceneThreshold,
+            cache: true,
+        })
+        sceneThreshold -= 0.05
+    } while (frames.length > 20 && sceneThreshold > 1)
     const transcript = await transcribe(filename, { model: "whisperasr:default", cache: true })
-    const frames = await ffmpeg.extractFrames(filename, {
-        transcript,
-        cache: true,
-    })
-    const res = await runPrompt(ctx => {
+    const { text, error } = await runPrompt(ctx => {
         def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true }) // ignore silent videos
         defImages(frames, { detail: "low" }) // low detail for better performance
         $`${prompt}        
@@ -79,4 +73,10 @@ async function processVideo(filename: string) {
         model: "vision",
         responseType: "markdown"
     })
+
+    if (error) {
+        output.error(error?.message)
+    } else {
+        output.appendContent(text)
+    }
 }
