@@ -67,7 +67,8 @@ async function processVideo(filename: string) {
     }, {
         systemSafety: true,
         model: "vision",
-        responseType: "markdown"
+        responseType: "markdown",
+        label: `analyze video ${filename}`
     })
 
     if (error) {
