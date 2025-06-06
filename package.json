@@ -7,7 +7,7 @@
     "docker:build": "docker build -t pelikhan-action-genai-video-issue-analyzer .",
     "docker:start": "docker run -e GITHUB_TOKEN pelikhan-action-genai-video-issue-analyzer",
     "whisperasr:start": "docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice:latest",
-    "whisperasr:ping": "curl -I http://127.0.0.1:9000/docs",
+    "whisperasr:ping": "for i in {1..10}; do\ncurl -I http://127.0.0.1:9000/docs && break || sleep 5;\ndone",
     "act:install": "gh extension install https://github.com/nektos/gh-act",
     "act": "gh act",
     "lint": "npx --yes prettier --write genaisrc/",
