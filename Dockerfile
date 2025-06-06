@@ -3,12 +3,11 @@ FROM node:lts-alpine
 
 
 # Install packages
-RUN apk add --no-cache git ffmpeg docker-cli openrc
+RUN apk add --no-cache git ffmpeg
 
 # check
 RUN node --version
 RUN ffmpeg -version
-RUN docker --version
 
 # Set working directory
 WORKDIR /genaiscript/action
