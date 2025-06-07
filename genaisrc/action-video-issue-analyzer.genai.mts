@@ -3,7 +3,7 @@ script({
         prompt: {
             type: "string",
             description: "Custom prompting instructions for each video.",
-            default: "Analyze the video and provide a summary of its content. Extract list of followup subissues if any."
+            default: "Analyze the video and provide a summary of its content. Extract list of followup subissues if any. The transcript is your primary source of text information, ignore text in images."
         }
     }
 })
