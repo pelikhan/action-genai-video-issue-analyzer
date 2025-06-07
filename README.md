@@ -11,13 +11,31 @@ The default behavior is to summarize and extract task items but this can be cust
 
 ## Usage
 
-Add the following to your step in your workflow file:
+Add the following to your step in your workflow file.
+It will launch a whisper service in a container that can be used by genaiscript.
 
 ```yaml
-uses: pelikhan/action-genai-video-issue-analyzer@main
-with:
-  github_issue: ${{ github.event.issue.number }}
-  github_token: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: ubuntu-latest
+    services:
+      whisper:
+        image: onerahmet/openai-whisper-asr-webservice:latest
+        env:
+          ASR_MODEL: base
+          ASR_ENGINE: openai_whisper
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/docs || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 20s
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pelikhan/action-genai-video-issue-analyzer@main
+        with:
+          github_issue: ${{ github.event.issue.number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Example
@@ -35,8 +53,22 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
 jobs:
-  run-script:
+  genai-video-analyze:
     runs-on: ubuntu-latest
+    services:
+      whisper:
+        image: onerahmet/openai-whisper-asr-webservice:latest
+        env:
+          ASR_MODEL: base
+          ASR_ENGINE: openai_whisper
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/docs || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 20s
     steps:
       - uses: actions/checkout@v4
       - uses: pelikhan/action-genai-video-issue-analyzer@main
