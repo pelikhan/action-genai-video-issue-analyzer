@@ -5,8 +5,9 @@ The default behavior is to summarize and extract task items but this can be cust
 
 ## Inputs
 
-- `prompt`: Custom prompt to use for the LLM model. If not provided, a default prompt will be used.
+- `instructions`: Custom prompt to use for the LLM model. If not provided, a default prompt will be used.
 - `github_token`: GitHub token with `models: read` permission at least. **(required)**
+- `github_issue`: The issue number to analyze. **(required)**
 - `debug`: Enable debug logging.
 
 ## Usage
@@ -88,14 +89,11 @@ We recommend updating the script metadata instead of editing the action files di
 - the readme description is the script description
 - the action branding is the script branding
 
-To **regenerate** the action files (`action.yml`, `Dockerfile`, `README.md`, `package.json`, `.gitignore`), run:
+To **regenerate** the action files (`action.yml`), run:
 
 ```bash
 npm run configure
 ```
-
-> [!CAUTION]
-> This will overwrite any changes you made to these files!
 
 To lint script files, run:
 
