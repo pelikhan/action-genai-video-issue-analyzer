@@ -12,6 +12,11 @@ inputs:
       (https://microsoft.github.io/genaiscript/reference/github-actions/#github\
       -models-permissions)."
     required: true
+  github_issue:
+    description: "GitHub issue number to comment on
+      (https://microsoft.github.io/genaiscript/reference/github-actions/#github-issue-number).
+      The action will comment on the issue with the generated text output."
+    required: true
   debug:
     description: Enable debug logging
       (https://microsoft.github.io/genaiscript/reference/scripts/logging/).

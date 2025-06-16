@@ -41,6 +41,8 @@ It will launch a whisper service in a container that can be used by genaiscript.
 
 ## Example
 
+Save the following in `.github/workflows/genai-video-issue-analyzer.yml` file:
+
 ```yaml
 name: genai video issue analyzer
 on:
