@@ -33,7 +33,7 @@ It will launch a whisper service in a container that can be used by genaiscript.
           --health-start-period 20s
     steps:
       - uses: actions/checkout@v4
-      - uses: pelikhan/action-genai-video-issue-analyzer@main
+      - uses: pelikhan/action-genai-video-issue-analyzer@v0
         with:
           github_issue: ${{ github.event.issue.number }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -74,7 +74,7 @@ jobs:
           --health-start-period 20s
     steps:
       - uses: actions/checkout@v4
-      - uses: pelikhan/action-genai-video-issue-analyzer@main
+      - uses: pelikhan/action-genai-video-issue-analyzer@v0
         with:
           github_issue: ${{ github.event.issue.number }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
