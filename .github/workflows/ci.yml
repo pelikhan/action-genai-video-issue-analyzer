@@ -1,7 +1,16 @@
 name: Continuous Integration
 on:
-  issues:
-    types: [opened, edited]
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      github_issue:
+        description: "GitHub issue number to comment on"
+        required: true
 permissions:
   contents: read
   issues: write
@@ -32,11 +41,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          --health-start-period 20s          
+          --health-start-period 20s
     steps:
       - uses: actions/checkout@v4
       - uses: ./
         with:
-          github_issue: ${{ github.event.issue.number }}
+          github_issue: 1
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          debug: "*"
+          debug: "script"
