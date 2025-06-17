@@ -5,9 +5,9 @@ The default behavior is to summarize and extract task items but this can be cust
 
 ## Inputs
 
-- `instructions`: Custom prompt to use for the LLM model. If not provided, a default prompt will be used.
 - `github_token`: GitHub token with `models: read` permission at least. **(required)**
-- `github_issue`: The issue number to analyze. **(required)**
+- `instructions`: Custom prompt to use for the LLM model. If not provided, a default prompt will be used.
+- `github_issue`: The issue number to analyze. Typically this variable is inferred from the event context.
 - `debug`: Enable debug logging.
 
 ## Usage
@@ -35,7 +35,6 @@ It will launch a whisper service in a container that can be used by genaiscript.
       - uses: actions/checkout@v4
       - uses: pelikhan/action-genai-video-issue-analyzer@v0
         with:
-          github_issue: ${{ github.event.issue.number }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
@@ -53,7 +52,7 @@ permissions:
     issues: write
     models: read
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
+    group: ${{ github.workflow }}-${{ github.event.issue.number }}
     cancel-in-progress: true
 jobs:
   genai-video-analyze:
@@ -76,7 +75,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pelikhan/action-genai-video-issue-analyzer@v0
         with:
-          github_issue: ${{ github.event.issue.number }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 

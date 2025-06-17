@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "genaiscript": "1.142.10"
+    "genaiscript": "1.142.12"
   },
   "scripts": {
     "upgrade": "npx -y npm-check-updates -u && npm install",

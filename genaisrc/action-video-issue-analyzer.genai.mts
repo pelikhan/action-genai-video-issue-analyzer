@@ -12,10 +12,7 @@ script({
 });
 
 const { dbg, output, vars } = env;
-dbg(`event path: %s`, process.env.GITHUB_EVENT_PATH);
-const event = await workspace.readJSON(process.env.GITHUB_EVENT_PATH)
-dbg(`event: %O`, event);
-const issue = await github.getIssue(event.issue?.number);
+const issue = await github.getIssue();
 if (!issue)
   throw new Error(
     "No issue found in the context. This action requires an issue to be present.",
