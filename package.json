@@ -1,24 +1,20 @@
 {
+  "private": true,
+  "version": "0.0.0",
   "dependencies": {
-    "genaiscript": "1.142.12"
+    "genaiscript": "2.3.10"
   },
   "scripts": {
-    "upgrade": "npx -y npm-check-updates -u && npm install",
+    "upgrade": "npx -y npm-check-updates -u && npm install && npm run fix",
     "docker:build": "docker build -t pelikhan-action-genai-video-issue-analyzer .",
     "docker:start": "docker run -e GITHUB_TOKEN pelikhan-action-genai-video-issue-analyzer",
-    "whisperasr:start": "docker run -d -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet/openai-whisper-asr-webservice:latest --network host",
-    "whisperasr:ping": "curl -I http://whisper:9000/docs",
-    "act:install": "gh extension install https://github.com/nektos/gh-act",
-    "act": "gh act",
     "lint": "npx --yes prettier --write genaisrc/",
     "fix": "genaiscript scripts fix",
     "typecheck": "genaiscript scripts compile",
     "configure": "genaiscript configure action action-video-issue-analyzer",
     "test": "echo 'No tests defined.'",
-    "action": "genaiscript run action-video-issue-analyzer --github-workspace --pull-request-comment --no-run-trace --no-output-trace",
-    "start": "WHISPERASR_API_BASE=http://whisper:9000 npm run action",
-    "dev": "clear && GITHUB_ISSUE=1 DEBUG=script npm run action",
+    "dev": "genaiscript run action-video-issue-analyzer",
+    "start": "genaiscript run action-video-issue-analyzer --github-workspace --no-run-trace --no-output-trace --out-output $GITHUB_STEP_SUMMARY",
     "release": "sh release.sh"
-  },
-  "version": "0.0.3"
+  }
 }

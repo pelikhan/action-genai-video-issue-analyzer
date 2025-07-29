@@ -1,20 +1,17 @@
 name: Continuous Integration
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      github_issue:
-        description: "GitHub issue number to comment on"
-        required: true
+  push:
+    branches:
+      - main
 permissions:
   contents: read
-  issues: write
   models: read
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -28,24 +25,8 @@ jobs:
   test-action:
     needs: test
     runs-on: ubuntu-latest
-    services:
-      whisper:
-        image: onerahmet/openai-whisper-asr-webservice:latest
-        env:
-          ASR_MODEL: base
-          ASR_ENGINE: openai_whisper
-        ports:
-          - 9000:9000
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/docs || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 20s
     steps:
       - uses: actions/checkout@v4
       - uses: ./
         with:
-          github_issue: 1
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          debug: "script"
