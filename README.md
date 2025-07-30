@@ -8,6 +8,7 @@ The default behavior is to summarize and extract task items but this can be cust
 |name|description|required|default|
 |----|-----------|--------|-------|
 | `instructions` | Custom prompting instructions for each video. | false | Analyze the video and provide a summary of its content. Extract list of followup subissues if any. The transcript is your primary source of text information, ignore text in images. |
+| `saveScreenshots` | Save important screenshots to a detached branch for reference. | false | false |
 | `debug` | Enable debug logging (https://microsoft.github.io/genaiscript/reference/scripts/logging/). | false |  |
 | `model_alias` | A YAML-like list of model aliases and model id: `translation: github:openai/gpt-4o` | false |  |
 | `openai_api_key` | OpenAI API key | false |  |
@@ -29,6 +30,22 @@ The default behavior is to summarize and extract task items but this can be cust
 |----|-----------|
 
 | `text` | The generated text output. |
+
+## Screenshot Storage Feature
+
+The action can automatically save important screenshots from video analysis to a detached branch for easy reference and documentation. When enabled with `saveScreenshots: true`, the LLM will:
+
+1. **Analyze video frames** and identify the most important screenshots that should be preserved
+2. **Upload selected images** to a detached `screenshots` branch in your repository
+3. **Include image references** in the generated markdown report with proper links
+
+Screenshots are organized by PR/Issue context and stored with descriptive filenames. This feature is particularly useful for:
+- Documenting UI/UX issues in video bug reports
+- Preserving key moments from demo videos
+- Creating visual documentation from screen recordings
+- Maintaining a visual history of important video content
+
+To enable this feature, add `saveScreenshots: true` to your workflow configuration.
 
 ## Usage
 
@@ -56,6 +73,7 @@ It will launch a whisper service in a container that can be used by genaiscript.
       - uses: pelikhan/action-genai-video-issue-analyzer@v0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          saveScreenshots: true  # Enable automatic screenshot saving
 ```
 
 ## Example
@@ -102,6 +120,7 @@ jobs:
       - uses: pelikhan/action-genai-video-issue-analyzer@v0 # update to the major version you want to use
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          saveScreenshots: true  # Optional: enable screenshot saving
 ```
 
 ## Development
