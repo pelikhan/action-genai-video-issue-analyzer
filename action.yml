@@ -57,6 +57,10 @@ inputs:
       (https://microsoft.github.io/genaiscript/reference/github-actions/#github\
       -models-permissions)."
     required: false
+  saveScreenshots:
+    description: Save important screenshots to a detached branch for reference.
+    required: false
+    default: 'false'
 outputs:
   text:
     description: The generated text output.
