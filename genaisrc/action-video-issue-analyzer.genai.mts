@@ -10,8 +10,8 @@ script({
     },
     saveScreenshots: {
       type: "boolean",
-      description: "Save important screenshots to a detached branch for reference.",
-      default: false,
+      description:
+        "Save important screenshots to a detached branch for reference.",
     },
   },
 });
@@ -22,7 +22,10 @@ if (!issue)
   throw new Error(
     "No issue found in the context. This action requires an issue to be present.",
   );
-const { instructions, saveScreenshots } = vars as { instructions: string; saveScreenshots: boolean };
+const { instructions, saveScreenshots } = vars as {
+  instructions: string;
+  saveScreenshots: boolean;
+};
 if (!instructions)
   throw new Error(
     "No instructions provided. Please provide instructions to process the video.",
@@ -37,10 +40,6 @@ if (assetLinks.length === 0)
 
 dbg(`issue: %s`, issue.title);
 dbg(`saveScreenshots: %s`, saveScreenshots);
-
-// Get PR context if available
-const pr = await github.getPullRequest();
-dbg(`PR context: %O`, pr);
 
 for (const assetLink of assetLinks) await processAssetLink(assetLink);
 
@@ -81,7 +80,7 @@ async function processVideo(filename: string) {
   const frames = await ffmpeg.extractFrames(filename, {
     transcript,
   });
-  
+
   // Build instructions based on saveScreenshots setting
   let promptInstructions = instructions;
   if (saveScreenshots) {
@@ -95,17 +94,16 @@ In addition to your analysis, please provide a section at the end titled "## Scr
 For each selected image, provide:
 - Frame number (1-based index from the available frames)
 - Brief description of why this frame is important
-- Suggested filename (descriptive, using kebab-case, no spaces or special characters)
 
 Format this section exactly as:
 ## Screenshots to Save
-1. Frame 5 - Important UI element shown - ui-element-demo
-2. Frame 12 - Error state visible - error-state-example
+1. Frame 5 - Important UI element shown
+2. Frame 12 - Error state visible
 (etc.)
 
 Only include this section if you identify frames that would be valuable to preserve.`;
   }
-  
+
   const { text, error } = await runPrompt(
     (ctx) => {
       ctx.def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true }); // ignore silent videos
@@ -154,33 +152,42 @@ interface SavedImage {
   description: string;
 }
 
-async function processScreenshots(analysisText: string, frames: string[], videoFilename: string): Promise<SavedImage[]> {
+async function processScreenshots(
+  analysisText: string,
+  frames: string[],
+  videoFilename: string,
+): Promise<SavedImage[]> {
   if (!saveScreenshots) return [];
-  
+
   // Parse the screenshot selection from the LLM response
   const screenshotMatches = parseScreenshotSelection(analysisText);
   if (screenshotMatches.length === 0) {
     dbg("No screenshots selected by LLM");
     return [];
   }
-  
+
   dbg(`Found ${screenshotMatches.length} screenshots to save`);
-  
+
   // Get PR/Issue context for folder structure
   const contextId = await getContextId();
   if (!contextId) {
     dbg("No PR/Issue context found, skipping screenshot save");
     return [];
   }
-  
+
   const savedImages: SavedImage[] = [];
-  
+
   for (const match of screenshotMatches) {
     try {
       const frameIndex = match.frameNumber - 1; // Convert to 0-based index
       if (frameIndex >= 0 && frameIndex < frames.length) {
         const framePath = frames[frameIndex];
-        const savedImage = await saveImageToDetachedBranch(framePath, match.filename, contextId, match.description);
+        const savedImage = await saveImageToDetachedBranch(
+          framePath,
+          match.filename,
+          contextId,
+          match.description,
+        );
         if (savedImage) {
           savedImages.push(savedImage);
         }
@@ -191,67 +198,71 @@ async function processScreenshots(analysisText: string, frames: string[], videoF
       dbg(`Error saving screenshot ${match.filename}: ${error}`);
     }
   }
-  
+
   return savedImages;
 }
 
-function parseScreenshotSelection(text: string): Array<{frameNumber: number; filename: string; description: string}> {
-  const screenshotSection = text.match(/## Screenshots to Save\s*\n([\s\S]*?)(?=\n##|\n---|\n\n#|$)/i);
+function parseScreenshotSelection(
+  text: string,
+): Array<{ frameNumber: number; filename: string; description: string }> {
+  const screenshotSection = text.match(
+    /## Screenshots to Save\s*\n([\s\S]*?)(?=\n##|\n---|\n\n#|$)/i,
+  );
   if (!screenshotSection) {
     dbg("No 'Screenshots to Save' section found in LLM response");
     return [];
   }
-  
-  const lines = screenshotSection[1].split('\n');
-  const results: Array<{frameNumber: number; filename: string; description: string}> = [];
-  
+
+  const lines = screenshotSection[1].split("\n");
+  const results: Array<{
+    frameNumber: number;
+    filename: string;
+    description: string;
+  }> = [];
+
   for (const line of lines) {
     // Match patterns like:
-    // "1. Frame 5 - Description text - filename"
-    // "2. Frame 12 - Another description - another-filename"
-    const match = line.match(/^\s*\d+\.\s*Frame\s+(\d+)\s*-\s*(.+?)\s*-\s*([a-zA-Z0-9\-_]+)\s*$/i);
+    // "1. Frame 5 - Description text"
+    // "2. Frame 12 - Another description"
+    const match = line.match(/^\s*\d+\.\s*Frame\s+(\d+)\s*-\s*(.+?)\s*$/i);
     if (match) {
       const frameNumber = parseInt(match[1]);
       const description = match[2].trim();
-      const filename = match[3].trim();
-      
+
       // Validate frame number
       if (isNaN(frameNumber) || frameNumber < 1) {
         dbg(`Invalid frame number: ${match[1]}`);
         continue;
       }
-      
-      // Validate filename (no spaces, special chars except hyphens and underscores)
-      if (!/^[a-zA-Z0-9\-_]+$/.test(filename)) {
-        dbg(`Invalid filename format: ${filename}`);
-        continue;
-      }
-      
+
+      // Generate hash-based filename
+      const hash = require("crypto")
+        .createHash("md5")
+        .update(`${frameNumber}-${description}`)
+        .digest("hex")
+        .substring(0, 8);
+      const filename = `frame-${frameNumber}-${hash}`;
+
       results.push({ frameNumber, description, filename });
-      dbg(`Parsed screenshot: Frame ${frameNumber} - ${description} - ${filename}`);
-    } else if (line.trim() && line.includes('Frame')) {
+      dbg(
+        `Parsed screenshot: Frame ${frameNumber} - ${description} - ${filename}`,
+      );
+    } else if (line.trim() && line.includes("Frame")) {
       dbg(`Could not parse line: ${line.trim()}`);
     }
   }
-  
+
   dbg(`Parsed ${results.length} valid screenshot selections`);
   return results;
 }
 
 async function getContextId(): Promise<string | null> {
   try {
-    // Try to get PR context first
-    const pr = await github.getPullRequest();
-    if (pr?.number) {
-      return `pr-${pr.number}`;
-    }
-    
-    // Fall back to issue context
     const issue = await github.getIssue();
     if (issue?.number) {
       return `issue-${issue.number}`;
     }
-    
+
     return null;
   } catch (error) {
     dbg(`Error getting context ID: ${error}`);
@@ -259,35 +270,42 @@ async function getContextId(): Promise<string | null> {
   }
 }
 
-async function saveImageToDetachedBranch(framePath: string, filename: string, contextId: string, description: string): Promise<SavedImage | null> {
+async function saveImageToDetachedBranch(
+  framePath: string,
+  filename: string,
+  contextId: string,
+  description: string,
+): Promise<SavedImage | null> {
   try {
     const branchName = "screenshots";
-    
+
     // Read the frame image file
     const frameFile = await workspace.readText(framePath);
     if (!frameFile) {
       dbg(`Could not read frame file: ${framePath}`);
       return null;
     }
-    
+
     // Get repository information
     const githubInfo = await github.info();
     if (!githubInfo) {
       dbg("No GitHub info available");
       return null;
     }
-    
+
     // Upload the image to the screenshots branch
     // The uploadAsset method uploads to an orphaned branch and returns a URL
-    const imageUrl = await github.uploadAsset(frameFile.content, { branchName });
-    
+    const imageUrl = await github.uploadAsset(frameFile.content, {
+      branchName,
+    });
+
     dbg(`Uploaded screenshot: ${filename}.png to ${imageUrl}`);
-    
+
     return {
       filename: `${filename}.png`,
       path: `${contextId}/${filename}.png`,
       url: imageUrl,
-      description
+      description,
     };
   } catch (error) {
     dbg(`Error uploading screenshot ${filename}: ${error}`);
@@ -297,18 +315,19 @@ async function saveImageToDetachedBranch(framePath: string, filename: string, co
 
 function generateImageMarkdown(savedImages: SavedImage[]): string {
   if (savedImages.length === 0) return "";
-  
+
   let markdown = "\n## Saved Screenshots\n\n";
-  markdown += "The following key screenshots have been saved for reference:\n\n";
-  
+  markdown +=
+    "The following key screenshots have been saved for reference:\n\n";
+
   for (const image of savedImages) {
     markdown += `### ${image.description}\n\n`;
     markdown += `![${image.description}](${image.url})\n\n`;
     markdown += `*Filename: \`${image.filename}\`*\n\n`;
   }
-  
+
   markdown += `---\n\n`;
   markdown += `*Note: Screenshots are automatically saved to the \`screenshots\` branch when the \`saveScreenshots\` option is enabled.*\n`;
-  
+
   return markdown;
 }

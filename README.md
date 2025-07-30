@@ -73,7 +73,7 @@ It will launch a whisper service in a container that can be used by genaiscript.
       - uses: pelikhan/action-genai-video-issue-analyzer@v0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          saveScreenshots: true  # Enable automatic screenshot saving
+          save_screenshots: true  # Enable automatic screenshot saving
 ```
 
 ## Example
