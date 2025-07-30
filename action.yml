@@ -1,5 +1,4 @@
 name: Action-Genai-Video-Issue-Analyzer
-description: Analyzes videos upload as assets
 inputs:
   instructions:
     description: Custom prompting instructions for each video.
@@ -7,6 +6,14 @@ inputs:
     default: Analyze the video and provide a summary of its content. Extract list of
       followup subissues if any. The transcript is your primary source of text
       information, ignore text in images.
+  image_detail:
+    description: Image detail level for analysis.
+    required: false
+    default: low
+  chunk_size:
+    description: Number of frames to process in each chunk.
+    required: false
+    default: 40
   debug:
     description: Enable debug logging
       (https://microsoft.github.io/genaiscript/reference/scripts/logging/).
