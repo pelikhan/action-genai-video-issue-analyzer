@@ -23,6 +23,8 @@ script({
   },
 });
 
+import { chunk } from "@genaiscript/runtime";
+
 const { dbg, output, vars } = env;
 const issue = await github.getIssue();
 if (!issue)
@@ -49,14 +51,6 @@ if (assetLinks.length === 0)
 dbg(`issue: %s`, issue.title);
 
 for (const assetLink of assetLinks) await processAssetLink(assetLink);
-
-function chunkArray<T>(array: T[], chunkSize: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < array.length; i += chunkSize) {
-    chunks.push(array.slice(i, i + chunkSize));
-  }
-  return chunks;
-}
 
 async function processFrameChunk(
   frames: string[],
@@ -170,7 +164,7 @@ async function processVideo(filename: string) {
   }
 
   // Process in chunks for high detail or many frames
-  const chunks = chunkArray(frames, chunkSize);
+  const chunks = chunk(frames, chunkSize);
   const chunkResults: string[] = [];
 
   output.heading(
