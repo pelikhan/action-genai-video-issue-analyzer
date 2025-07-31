@@ -8,11 +8,10 @@ script({
       default:
         "Analyze the video and provide a summary of its content. Extract list of followup subissues if any. The transcript is your primary source of text information, ignore text in images.",
     },
-    imageDetail: {
-      type: "string",
-      description: "Image detail level for analysis.",
-      default: "low",
-      enum: ["low", "high"],
+    highQuality: {
+      type: "boolean",
+      description: "Enable high quality image analysis.",
+      default: false,
     },
     chunkSize: {
       type: "number",
@@ -30,9 +29,9 @@ if (!issue)
   throw new Error(
     "No issue found in the context. This action requires an issue to be present.",
   );
-const { instructions, imageDetail, chunkSize } = vars as {
+const { instructions, highQuality, chunkSize } = vars as {
   instructions: string;
-  imageDetail: string;
+  highQuality: boolean;
   chunkSize: number;
 };
 if (!instructions)
@@ -61,7 +60,7 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 
 async function processFrameChunk(
   frames: string[],
-  transcript: any,
+  transcript: string,
   chunkIndex: number,
   totalChunks: number,
   filename: string,
@@ -70,10 +69,10 @@ async function processFrameChunk(
     `Processing chunk ${chunkIndex + 1}/${totalChunks} with ${frames.length} frames`,
   );
 
-  const { text, error } = await runPrompt(
+  const { text } = await runPrompt(
     (ctx) => {
-      ctx.def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true });
-      ctx.defImages(frames, { detail: imageDetail as "low" | "high" });
+      ctx.def("TRANSCRIPT", transcript, { ignoreEmpty: true });
+      ctx.defImages(frames, { detail: highQuality ? "high" : "low" });
       ctx.$`${instructions}
 
 This is chunk ${chunkIndex + 1} of ${totalChunks} from the video analysis.
@@ -93,11 +92,6 @@ Focus on analyzing the content in these specific frames while being aware this i
       label: `analyze video chunk ${chunkIndex + 1}/${totalChunks} of ${filename}`,
     },
   );
-
-  if (error) {
-    output.error(`Error processing chunk ${chunkIndex + 1}: ${error?.message}`);
-    return `## Chunk ${chunkIndex + 1} Analysis Failed\n\nError: ${error?.message}`;
-  }
 
   return text || `## Chunk ${chunkIndex + 1} Analysis\n\nNo content generated.`;
 }
@@ -140,13 +134,13 @@ async function processVideo(filename: string) {
     transcript,
   });
 
-  // If we have few frames or using low detail, process normally
-  if (frames.length <= chunkSize || imageDetail === "low") {
+  // If we have few frames or using low quality, process normally
+  if (frames.length <= chunkSize || !highQuality) {
     const { text, error } = await runPrompt(
       (ctx) => {
         ctx.def("TRANSCRIPT", transcript?.srt, { ignoreEmpty: true }); // ignore silent videos
         ctx.defImages(frames, {
-          detail: imageDetail as "low" | "high",
+          detail: highQuality ? "high" : "low",
           sliceSample: chunkSize,
         });
         ctx.$`${instructions}
@@ -187,7 +181,7 @@ async function processVideo(filename: string) {
   for (let i = 0; i < chunks.length; i++) {
     const chunkResult = await processFrameChunk(
       chunks[i],
-      transcript,
+      transcript?.srt || "",
       i,
       chunks.length,
       filename,
