@@ -1,6 +1,6 @@
 # GitHub Action Video Issue Analyzer
 
-This GitHub Action runs all video assets in an issue body through a LLM model to analyze the content, or can analyze a direct video URL when triggered via workflow_dispatch.
+This GitHub Action runs all video assets in an issue body through a LLM model to analyze the content, or can analyze a direct video URL when triggered via workflow_dispatch, or can process local MP4 files and save analysis results to adjacent markdown files.
 The default behavior is to summarize and extract task items but this can be customized through the `instructions` input.
 
 The action outputs the analysis results to the GitHub Step Summary for easy viewing in the Actions tab.
@@ -25,6 +25,7 @@ The action outputs the analysis results to the GitHub Step Summary for easy view
 | `azure_ai_inference_api_credentials` | Azure Serverless OpenAI API credentials type | false |  |
 | `github_token` | GitHub token with `models: read` permission at least (https://microsoft.github.io/genaiscript/reference/github-actions/#github-models-permissions). | false |  |
 | `video_url` | Direct video URL to analyze (alternative to extracting from issue body). Used when triggered via workflow_dispatch. | false |  |
+| `local_files` | Local directory path to scan for *.mp4 files, or specific file path to a *.mp4 file. When provided, analysis results are saved to adjacent .md files instead of GitHub Step Summary. | false |  |
 
 ## Outputs
 
@@ -218,6 +219,70 @@ jobs:
           video_url: ${{ github.event.inputs.video_url }}
           instructions: ${{ github.event.inputs.instructions }}
 ```
+
+### Local Files Processing
+
+For processing local MP4 files and saving analysis results to adjacent markdown files, you can use the `local_files` parameter:
+
+```yaml
+name: process local videos
+on: 
+  push:
+    paths:
+      - '**.mp4'
+  workflow_dispatch:
+    inputs:
+      local_files:
+        description: 'Directory path to scan for MP4 files or specific MP4 file path'
+        required: true
+        type: string
+permissions:
+    contents: write
+    models: read
+jobs:
+  process-videos:
+    runs-on: ubuntu-latest
+    services:
+      whisper:
+        image: onerahmet/openai-whisper-asr-webservice:latest
+        env:
+          ASR_MODEL: base
+          ASR_ENGINE: openai_whisper
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -f http://localhost:9000/docs || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 20s
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .genaiscript/cache/**
+          key: genaiscript-${{ github.run_id }}
+          restore-keys: |
+            genaiscript-
+      - uses: pelikhan/action-genai-video-issue-analyzer@v0 # update to the major version you want to use
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          local_files: ${{ github.event.inputs.local_files || './videos' }}
+          instructions: 'Analyze the video and provide a detailed summary with key points and action items.'
+      - name: Commit generated markdown files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add "*.md"
+          git diff --staged --quiet || git commit -m "Add video analysis results"
+          git push
+```
+
+**Local Files Behavior:**
+- If you provide a directory path, it will scan for all `*.mp4` files in that directory
+- If you provide a specific file path, it will process only that MP4 file
+- Analysis results are saved to adjacent `.md` files (e.g., `video.mp4` → `video.md`)
+- The action will skip non-MP4 files and provide appropriate error messages for inaccessible files
 
 ## Development
 
