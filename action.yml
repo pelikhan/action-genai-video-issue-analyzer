@@ -64,6 +64,9 @@ inputs:
   video_url:
     description: "Direct video URL to analyze (alternative to extracting from issue body)"
     required: false
+  local_files:
+    description: "Local directory path to scan for *.mp4 files, or specific file path to a *.mp4 file"
+    required: false
 outputs:
   text:
     description: The generated text output.

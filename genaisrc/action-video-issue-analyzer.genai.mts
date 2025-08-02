@@ -12,18 +12,28 @@ script({
       type: "string",
       description: "Direct video URL to analyze (alternative to extracting from issue body)",
     },
+    localFiles: {
+      type: "string",
+      description: "Local directory path to scan for *.mp4 files, or specific file path to a *.mp4 file",
+    },
   },
 });
 
+import * as fs from "fs";
+import * as path from "path";
+
 const { dbg, output, vars } = env;
-const { instructions, videoUrl } = vars as { instructions?: string; videoUrl?: string };
+const { instructions, videoUrl, localFiles } = vars as { instructions?: string; videoUrl?: string; localFiles?: string };
 
 // Use default instructions if not provided
 const finalInstructions = instructions || 
   "Analyze the video and provide a summary of its content. Extract list of followup subissues if any. The transcript is your primary source of text information, ignore text in images.";
 
-// Process direct video URL if provided
-if (videoUrl) {
+// Process local files if provided
+if (localFiles) {
+  dbg(`Processing local files: ${localFiles}`);
+  await processLocalFiles(localFiles);
+} else if (videoUrl) {
   dbg(`Processing direct video URL: ${videoUrl}`);
   await processDirectVideoUrl(videoUrl);
 } else {
@@ -31,7 +41,7 @@ if (videoUrl) {
   const issue = await github.getIssue();
   if (!issue)
     throw new Error(
-      "No issue found in the context and no videoUrl provided. This action requires either an issue to be present or a videoUrl parameter.",
+      "No issue found in the context and no videoUrl or localFiles provided. This action requires either an issue to be present, a videoUrl parameter, or localFiles parameter.",
     );
 
   const RX = /^https:\/\/github.com\/user-attachments\/assets\/.+$/gim;
@@ -72,7 +82,7 @@ async function processAssetLink(assetLink: string) {
   await processVideo(filename);
 }
 
-async function processVideo(filename: string) {
+async function processVideo(filename: string, saveToFile?: string): Promise<string | void> {
   const transcript = await transcribe(filename, {
     model: "whisperasr:default",
     cache: true,
@@ -107,7 +117,16 @@ async function processVideo(filename: string) {
 
   if (error) {
     output.error(error?.message);
+    return;
+  }
+
+  if (saveToFile) {
+    // Save to file instead of appending to output
+    await workspace.writeText(saveToFile, text);
+    dbg(`Analysis saved to: ${saveToFile}`);
+    return text;
   } else {
+    // Original behavior - append to output
     output.appendContent(text);
   }
 }
@@ -139,4 +158,63 @@ async function processDirectVideoUrl(videoUrl: string) {
   dbg(`filename`, filename);
 
   await processVideo(filename);
+}
+
+async function processLocalFiles(localFilesPath: string) {
+  output.heading(4, `Local files: ${localFilesPath}`);
+  dbg(`Processing local files: ${localFilesPath}`);
+  
+  // Check if it's a specific file or directory
+  const stat = await fs.promises.stat(localFilesPath);
+  
+  if (stat.isFile()) {
+    // Single file - check if it's an mp4
+    if (localFilesPath.toLowerCase().endsWith('.mp4')) {
+      await processLocalVideoFile(localFilesPath);
+    } else {
+      output.p(`File ${localFilesPath} is not an MP4 file, skipping`);
+    }
+  } else if (stat.isDirectory()) {
+    // Directory - scan for mp4 files
+    const files = await fs.promises.readdir(localFilesPath);
+    const mp4Files = files.filter(file => file.toLowerCase().endsWith('.mp4'));
+    
+    if (mp4Files.length === 0) {
+      output.p(`No MP4 files found in directory ${localFilesPath}`);
+      return;
+    }
+    
+    dbg(`Found ${mp4Files.length} MP4 files in ${localFilesPath}`);
+    
+    for (const mp4File of mp4Files) {
+      const fullPath = path.join(localFilesPath, mp4File);
+      await processLocalVideoFile(fullPath);
+    }
+  } else {
+    throw new Error(`Local files path ${localFilesPath} is neither a file nor a directory`);
+  }
+}
+
+async function processLocalVideoFile(videoPath: string) {
+  output.heading(5, `Processing: ${videoPath}`);
+  dbg(`Processing local video file: ${videoPath}`);
+  
+  // Check if file exists and is accessible
+  try {
+    await fs.promises.access(videoPath, fs.constants.R_OK);
+  } catch (error) {
+    output.error(`Cannot access video file: ${videoPath}`);
+    return;
+  }
+  
+  // Generate output path (change .mp4 to .md)
+  const outputPath = videoPath.replace(/\.mp4$/i, '.md');
+  dbg(`Output will be saved to: ${outputPath}`);
+  
+  // Process the video and save result
+  const result = await processVideo(videoPath, outputPath);
+  
+  if (result) {
+    output.p(`✅ Analysis completed and saved to: ${outputPath}`);
+  }
 }
